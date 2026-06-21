@@ -9,6 +9,7 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">
     </script>
     <style>
+        /* (your existing styles – unchanged) */
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
         *,
@@ -58,7 +59,6 @@
             border-color: #3b4a6b !important;
             background-color: #161b26 !important;
         }
-        /* Expired card override */
         .market-card.expired {
             opacity: 0.7;
             background-color: #0a0c10 !important;
@@ -179,7 +179,6 @@
             color: #64748b;
         }
 
-        /* Loading skeleton */
         @keyframes shimmer {
             0% {
                 opacity: .4
@@ -230,13 +229,10 @@
 
     <div class="max-w-[1200px] mx-auto px-4 py-6">
 
-        <!-- Error banner (hidden by default) -->
         <div id="errorBanner" class="hidden mb-4 flex items-start gap-2.5 bg-rose-950/30 border border-rose-500/30 rounded-lg px-4 py-3 text-[12px] text-rose-300"></div>
 
-        <!-- PUBLIC VIEW -->
         <div id="publicView">
             <div id="topicsContainer" class="grid grid-cols-1 gap-4">
-                <!-- Loading skeletons -->
                 <div class="skeleton h-48 w-full"></div>
                 <div class="skeleton h-48 w-full"></div>
                 <div class="skeleton h-48 w-full"></div>
@@ -266,7 +262,32 @@
         const sb = createClient(SUPABASE_URL, SUPABASE_KEY);
 
         // ============================================================
-        // CONSTANTS
+        // HELPERS – parse bigint date (YYYYMMDDHHMM) to Date
+        // ============================================================
+        function parseDateNum(num) {
+            const s = num.toString();
+            return new Date(
+                parseInt(s.slice(0, 4)),
+                parseInt(s.slice(4, 6)) - 1,
+                parseInt(s.slice(6, 8)),
+                parseInt(s.slice(8, 10)),
+                parseInt(s.slice(10, 12))
+            );
+        }
+
+        function getNowNum() {
+            const now = new Date();
+            return parseInt(
+                now.getFullYear().toString() +
+                String(now.getMonth() + 1).padStart(2, '0') +
+                String(now.getDate()).padStart(2, '0') +
+                String(now.getHours()).padStart(2, '0') +
+                String(now.getMinutes()).padStart(2, '0')
+            );
+        }
+
+        // ============================================================
+        // ICONS & CONSTANTS (unchanged)
         // ============================================================
         const ICONS = {
             sun: '<circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"></path>',
@@ -286,7 +307,6 @@
         function renderIcon(name) {
             return `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-3.5 h-3.5">${ICONS[name] || ICONS.sun}</svg>`;
         }
-        const ICON_OPTIONS = Object.keys(ICONS);
 
         const COLOR_MAP = {
             emerald: { text: 'text-emerald-400', bar: 'bg-emerald-500', dot: 'bg-emerald-400' },
@@ -299,7 +319,6 @@
             pink: { text: 'text-pink-400', bar: 'bg-pink-500', dot: 'bg-pink-400' },
             violet: { text: 'text-violet-400', bar: 'bg-violet-500', dot: 'bg-violet-400' },
         };
-        const COLOR_OPTIONS = Object.keys(COLOR_MAP);
 
         const CATEGORY_LABEL = { general: 'General', sports: 'Sports', tragedy: 'Crisis', finance: 'Finance',
         politics: 'Politics' };
@@ -307,7 +326,7 @@
             finance: 'pill-finance', politics: 'pill-politics' };
 
         // ============================================================
-        // USER ID (persistent per browser)
+        // USER ID
         // ============================================================
         const USER_ID = (() => {
             let id = localStorage.getItem('vibecheck_user_id');
@@ -317,7 +336,7 @@
         })();
 
         // ============================================================
-        // IN-MEMORY STATE
+        // STATE
         // ============================================================
         let state = {
             topics: {},
@@ -326,7 +345,7 @@
         };
 
         // ============================================================
-        // ERROR DISPLAY
+        // ERROR / STATUS
         // ============================================================
         function showError(msg) {
             const el = document.getElementById('errorBanner');
@@ -336,8 +355,23 @@
 
         function hideError() { document.getElementById('errorBanner').classList.add('hidden'); }
 
+        function setLiveStatus(status) {
+            const dot = document.getElementById('liveIndicator');
+            const label = document.getElementById('liveLabel');
+            if (status === 'live') {
+                dot.className = 'live-dot w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block';
+                label.textContent = 'Live';
+            } else if (status === 'connecting') {
+                dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 inline-block';
+                label.textContent = 'Connecting…';
+            } else {
+                dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-400 inline-block';
+                label.textContent = 'Offline';
+            }
+        }
+
         // ============================================================
-        // LOAD ALL DATA
+        // LOAD DATA
         // ============================================================
         async function loadData() {
             setLiveStatus('connecting');
@@ -381,8 +415,6 @@
             setLiveStatus('live');
             renderPublic();
             subscribeToUpdates();
-
-            // start timer loop
             updateTimers();
             setInterval(updateTimers, 1000);
         }
@@ -405,30 +437,14 @@
                 });
         }
 
-        function setLiveStatus(status) {
-            const dot = document.getElementById('liveIndicator');
-            const label = document.getElementById('liveLabel');
-            if (status === 'live') {
-                dot.className = 'live-dot w-1.5 h-1.5 rounded-full bg-emerald-400 inline-block';
-                label.textContent = 'Live';
-            } else if (status === 'connecting') {
-                dot.className = 'w-1.5 h-1.5 rounded-full bg-amber-400 inline-block';
-                label.textContent = 'Connecting…';
-            } else {
-                dot.className = 'w-1.5 h-1.5 rounded-full bg-rose-400 inline-block';
-                label.textContent = 'Offline';
-            }
-        }
-
         // ============================================================
-        // VOTE HANDLER (with expiry guard)
+        // VOTE HANDLER
         // ============================================================
         async function handleVote(topicId, optionId) {
             const topic = state.topics[topicId];
-            const now = parseInt(new Date().toISOString().replace(/[-T:.Z]/g, '').slice(0, 12));
+            const nowNum = getNowNum();
 
-            // If expired, do nothing (UI is already disabled)
-            if (topic && topic.expires_at && topic.expires_at <= now) {
+            if (topic && topic.expires_at && topic.expires_at <= nowNum) {
                 alert("This poll has expired and is closed for voting.");
                 return;
             }
@@ -506,11 +522,9 @@
             const pillClass = CATEGORY_PILL[topic.category] || 'pill-general';
             const badgeLabel = CATEGORY_LABEL[topic.category] || topic.category;
 
-            // Apply expired class if needed
             const cardClass = `market-card bg-[#111520] border border-[#1e2533] rounded-xl overflow-hidden ${expired ? 'expired' : ''}`;
             wrap.className = cardClass;
 
-            // Badge: "Live" or "Closed"
             const badgeHtml = expired ?
                 `<span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border live-badge bg-[#2d3748] text-[#9ca3af] border-[#3a4455]">Closed</span>` :
                 `<span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded border ${pillClass}">${badgeLabel}</span>`;
@@ -542,7 +556,7 @@
         }
 
         // ============================================================
-        // RENDER PUBLIC FEED
+        // RENDER PUBLIC – SORTED LATEST FIRST (using parseDateNum)
         // ============================================================
         function renderPublic() {
             const container = document.getElementById('topicsContainer');
@@ -552,13 +566,17 @@
             archiveList.innerHTML = '';
 
             const topics = Object.values(state.topics);
-            const now = parseInt(new Date().toISOString().replace(/[-T:.Z]/g, '').slice(0, 12));
+            const nowNum = getNowNum();
 
-            // Active topics (status='active') – include expired ones but mark them
-            const activeTopics = topics.filter(t => t.status === 'active').sort((a, b) => new Date(b.created_at) - new Date(a
-            .created_at));
+            // Active topics (status='active') – sort by created_at descending (latest first)
+            const activeTopics = topics
+                .filter(t => t.status === 'active')
+                .sort((a, b) => {
+                    const dateA = parseDateNum(a.created_at);
+                    const dateB = parseDateNum(b.created_at);
+                    return dateB - dateA; // descending = newest first
+                });
 
-            // Archived topics (status='archived')
             const archivedTopics = topics.filter(t => t.status === 'archived');
 
             if (activeTopics.length === 0) {
@@ -566,7 +584,7 @@
                 `<div class="text-center py-16 text-slate-500 text-[13px]">No active markets yet. Create one in Admin.</div>`;
             } else {
                 activeTopics.forEach(t => {
-                    const expired = t.expires_at && t.expires_at <= now;
+                    const expired = t.expires_at && t.expires_at <= nowNum;
                     container.appendChild(buildTopicSection(t, expired));
                 });
                 // Update UI for each
@@ -592,7 +610,7 @@
         }
 
         // ============================================================
-        // GRAND TOTAL
+        // UPDATE GRAND TOTAL
         // ============================================================
         function updateGrandTotal() {
             const el = document.getElementById('total');
@@ -608,7 +626,7 @@
         }
 
         // ============================================================
-        // UPDATE OPTION UI (respects expiry for disabled state)
+        // UPDATE TOPIC UI
         // ============================================================
         function updateTopicUI(topicId, changedOptionIds = []) {
             const topic = state.topics[topicId];
@@ -617,17 +635,13 @@
             const counts = state.voteCounts[topicId] || {};
             const total = Object.values(counts).reduce((a, b) => a + b, 0);
             const myVote = state.userVotes[topicId] || null;
-            const now = parseInt(new Date().toISOString().replace(/[-T:.Z]/g, '').slice(0, 12));
-            const expired = topic.expires_at && topic.expires_at <= now;
+            const nowNum = getNowNum();
+            const expired = topic.expires_at && topic.expires_at <= nowNum;
 
             const section = document.getElementById(`topic-${topicId}`);
             if (section) {
                 const el = section.querySelector('.topic-total');
                 if (el) el.textContent = total.toLocaleString();
-
-                // Update badge and status if expired (re-run render toggles classes)
-                // but we can also dynamically update, simpler to just re-render?
-                // We'll not re-render entire card, just update option rows.
             }
 
             (topic.options || []).forEach(option => {
@@ -673,21 +687,14 @@
         }
 
         // ============================================================
-        // COUNTDOWN TIMERS (updates every second)
+        // COUNTDOWN TIMERS – using parseDateNum
         // ============================================================
         function updateTimers() {
             const now = new Date();
-            const nowNum = parseInt(now.toISOString().replace(/[-T:.Z]/g, '').slice(0, 12));
+            const nowNum = getNowNum();
             Object.values(state.topics).forEach(t => {
                 if (t.expires_at) {
-                    const s = t.expires_at.toString();
-                    const expiryDate = new Date(
-                        parseInt(s.slice(0, 4)),
-                        parseInt(s.slice(4, 6)) - 1,
-                        parseInt(s.slice(6, 8)),
-                        parseInt(s.slice(8, 10)),
-                        parseInt(s.slice(10, 12))
-                    );
+                    const expiryDate = parseDateNum(t.expires_at);
                     const diff = expiryDate - now;
                     const el = document.getElementById(`timer-${t.id}`);
                     if (el) {
@@ -697,27 +704,13 @@
                             el.innerText = `Ends in: ${mins}m ${secs}s`;
                         } else {
                             el.innerText = 'Expired';
-                            // If it just expired, we might need to re-render to apply disabled state
-                            // But the renderPublic was called initially, and timer will trigger updateTopicUI
-                            // which will not change the expired class. We should re-render or toggle class.
-                            // We'll check if the card has 'expired' class, if not, add it and re-render?
-                            // Simpler: re-render entire feed when expiry occurs? That might be heavy.
-                            // Instead, we can add a class and disable buttons dynamically.
-                            // We'll implement a function to mark a topic as expired in the DOM.
-                            // For simplicity, we can call renderPublic() when a topic expires? But that would reset UI state.
-                            // Better: when timer hits 0, we can toggle the expired state on the card.
-                            // We'll do a check: if the topic is active and not yet marked expired, we update the DOM.
-                            // We'll store a flag in state or check if the card has expired class.
+                            // Apply expired state if not already done
                             const card = document.getElementById(`topic-${t.id}`);
-                            if (card && !card.classList.contains('expired')) {
-                                // It just expired, so we need to apply expired styling and disable buttons.
-                                // We can re-render that specific card or just toggle class and disable clicks.
-                                // Let's re-render the whole feed for simplicity (but it's fine).
-                                // However, re-render will lose any flash updates, but okay.
-                                // We'll call renderPublic() only once per second? That's heavy. Let's just toggle class and disable buttons.
-                                // Toggle class:
+                            if (card && !card.classList.contains('expired') && t.status === 'active') {
+                                // Re-render the card to apply expired styles and disable buttons
+                                // We can just re-render the entire feed, but that would reset flash updates.
+                                // Instead, we can manually apply the expired class and disable buttons.
                                 card.classList.add('expired');
-                                // Change badge and status text
                                 const badge = card.querySelector('.live-badge');
                                 if (badge) {
                                     badge.textContent = 'Closed';
@@ -731,15 +724,12 @@
                                 if (statusLabel) statusLabel.textContent = 'Closed';
                                 const footerMsg = card.querySelector('.px-5.py-3 .text-slate-500:last-child');
                                 if (footerMsg) footerMsg.textContent = 'Voting closed';
-                                // Disable all buttons in this card
                                 const buttons = card.querySelectorAll('.opt-btn');
                                 buttons.forEach(btn => {
                                     btn.style.pointerEvents = 'none';
                                     btn.style.cursor = 'default';
                                     btn.disabled = true;
-                                    // remove click listeners by replacing? We can just add pointer-events none.
                                 });
-                                // Also update the timer text to "Expired" (already set)
                             }
                         }
                     }
