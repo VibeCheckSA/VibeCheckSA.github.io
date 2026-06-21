@@ -388,8 +388,11 @@ function renderPublic() {
   archiveList.innerHTML = '';
 
   const topics = Object.values(state.topics);
+  
+  // FIXED SORTING: Sort directly by numeric created_at (highest number first)
   const active = topics.filter(t => t.status === 'active')
-    .sort((a, b) => (a.category === 'general' ? -1 : 1) - (b.category === 'general' ? -1 : 1) || new Date(b.created_at) - new Date(a.created_at));
+    .sort((a, b) => b.created_at - a.created_at);
+
   const archived = topics.filter(t => t.status === 'archived');
 
   if (active.length === 0) {
