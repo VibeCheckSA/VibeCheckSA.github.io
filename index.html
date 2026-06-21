@@ -207,7 +207,7 @@ async function loadData() {
   const { data: topics, error: tErr } = await sb
     .from('topics')
     .select('*, options(*)')
-    .order('created_at', { ascending: true });
+    .order('created_at', { ascending: false });
 
   if (tErr) { showError('Could not load markets: ' + tErr.message); setLiveStatus('error'); return; }
 
