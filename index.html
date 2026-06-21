@@ -352,7 +352,9 @@ function buildTopicSection(topic) {
   wrap.id = `topic-${topic.id}`;
   const pillClass = CATEGORY_PILL[topic.category] || 'pill-general';
   const badgeLabel = CATEGORY_LABEL[topic.category] || topic.category;
+  
   wrap.className = 'market-card bg-[#111520] border border-[#1e2533] rounded-xl overflow-hidden';
+  
   wrap.innerHTML = `
     <div class="px-5 pt-4 pb-3 border-b border-[#1a2030]">
       <div class="flex items-center justify-between gap-3 mb-2.5">
@@ -363,6 +365,8 @@ function buildTopicSection(topic) {
         </div>
       </div>
       <h2 class="text-[14px] font-semibold text-white leading-snug">${topic.title}</h2>
+      <!-- Countdown Timer Container -->
+      <div id="timer-${topic.id}" class="text-[10px] text-amber-500 font-mono mt-2 font-bold"></div>
     </div>
     <div class="px-2 py-2 space-y-0.5" id="grid-${topic.id}"></div>
     <div class="px-5 py-3 border-t border-[#1a2030] flex items-center justify-between">
@@ -372,11 +376,11 @@ function buildTopicSection(topic) {
       <span class="text-[11px] text-slate-500">Tap to respond</span>
     </div>
   `;
+  
   const grid = wrap.querySelector(`#grid-${topic.id}`);
   topic.options.forEach(opt => grid.appendChild(buildCard(topic.id, opt)));
   return wrap;
 }
-
 // ============================================================
 // RENDER PUBLIC FEED
 // ============================================================
