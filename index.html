@@ -387,13 +387,20 @@ function renderPublic() {
   container.innerHTML = '';
   archiveList.innerHTML = '';
 
-  const topics = Object.values(state.topics);
+const topics = Object.values(state.topics);
   
-  // FIXED SORTING: Sort directly by numeric created_at (highest number first)
-  const active = topics.filter(t => t.status === 'active')
-    .sort((a, b) => b.created_at - a.created_at);
+  // Get current time in your YYYYMMDDHHMM format
+  const now = parseInt(new Date().toISOString().replace(/[-T:.Z]/g, '').slice(0, 12));
 
-  const archived = topics.filter(t => t.status === 'archived');
+  // Filter: Active if status is 'active' AND (no expiry OR not yet expired)
+  const active = topics.filter(t => 
+    t.status === 'active' && (!t.expires_at || t.expires_at > now)
+  ).sort((a, b) => b.created_at - a.created_at);
+
+  // Filter: Archived if status is 'archived' OR the time has passed
+  const archived = topics.filter(t => 
+    t.status === 'archived' || (t.expires_at && t.expires_at <= now)
+  );
 
   if (active.length === 0) {
     container.innerHTML = `<div class="text-center py-16 text-slate-500 text-[13px]">No active markets yet. Create one in Admin.</div>`;
