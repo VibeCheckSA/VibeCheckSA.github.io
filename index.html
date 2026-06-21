@@ -444,9 +444,7 @@ const topics = Object.values(state.topics);
 }
 function updateGrandTotal() {
   const el = document.getElementById('totalVotes');
-  
-  // Defensive check: if the element doesn't exist, stop here
-  if (!el) return;
+  if (!el) return; // Stop here if the element doesn't exist yet
 
   let total = 0;
   Object.values(state.topics).forEach(t => {
@@ -454,6 +452,9 @@ function updateGrandTotal() {
       const counts = state.voteCounts[t.id] || {};
       total += Object.values(counts).reduce((a, b) => a + b, 0);
     }
+  });
+  el.textContent = total.toLocaleString();
+}
   });
   
   el.textContent = total.toLocaleString();
