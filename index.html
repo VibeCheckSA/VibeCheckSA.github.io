@@ -85,7 +85,7 @@
         <span id="liveLabel" class="text-[12px] text-slate-400 font-medium">Connecting…</span>
       </div>
       <div class="text-[12px] text-slate-300 font-semibold">
-        <span id="totalVotes" class="text-white">—</span>
+        <span id="total" class="text-white">—</span>
         <span class="text-slate-500 font-normal ml-1">responses</span>
       </div>
     </div>
@@ -184,7 +184,7 @@ const USER_ID = (() => {
 let state = {
   topics: {},      // { [topicId]: { id, title, category, status, created_at, ends_at, options: [] } }
   voteCounts: {},  // { [topicId]: { [optionId]: count } }
-  userVotes: {},   // { [topicId]: optionId }
+  user: {},   // { [topicId]: optionId }
 };
 
 // ============================================================
@@ -283,6 +283,33 @@ function setLiveStatus(status) {
 // VOTE HANDLER
 // ============================================================
 async function handleVote(topicId, optionId) {
+  async function handleVote(topicId, optionId) {
+  // 1. GATEKEEPER: Check expiry before anything else
+  const topic = state.topics[topicId];
+  const now = parseInt(new Date().toISOString().replace(/[-T:.Z]/g, '').slice(0, 12));
+
+  if (topic && topic.expires_at && topic.expires_at <= now) {
+    alert("This poll has expired and is now closed for voting.");
+    return; // Exit here
+  }
+
+  // 2. EXISTING LOGIC:
+  const previous = state.userVotes[topicId] || null;
+
+  // Optimistic UI update
+  if (previous === optionId) {
+    // Unvote
+    state.userVotes[topicId] = null;
+    state.voteCounts[topicId][optionId] = Math.max(0, (state.voteCounts[topicId][optionId] || 0) - 1);
+  } else {
+    if (previous) {
+      state.voteCounts[topicId][previous] = Math.max(0, (state.voteCounts[topicId][previous] || 0) - 1);
+    }
+    state.voteCounts[topicId][optionId] = (state.voteCounts[topicId][optionId] || 0) + 1;
+    state.userVotes[topicId] = optionId;
+  }
+  updateTopicUI(topicId, [optionId, previous].filter(Boolean));
+}
   const previous = state.userVotes[topicId] || null;
 
   // Optimistic UI update
