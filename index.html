@@ -465,49 +465,64 @@ function updateGrandTotal() {
 function updateTopicUI(topicId, changedOptionIds = []) {
   const topic = state.topics[topicId];
   if (!topic) return;
+
   const counts = state.voteCounts[topicId] || {};
-  const total = Object.values(counts).reduce((a,b) => a+b, 0);
+  const total = Object.values(counts).reduce((a, b) => a + b, 0);
   const myVote = state.userVotes[topicId] || null;
 
+  // 1. Update the section total
   const section = document.getElementById(`topic-${topicId}`);
   if (section) {
     const el = section.querySelector('.topic-total');
     if (el) el.textContent = total.toLocaleString();
   }
 
+  // 2. Update each option row
   topic.options.forEach(option => {
     const row = document.getElementById(`card-${topicId}-${option.id}`);
     if (!row) return;
-    const c = COLOR_MAP[option.color] || COLOR_MAP.slate;
+
     const count = counts[option.id] || 0;
     const pct = total > 0 ? (count / total * 100) : 0;
 
-    row.querySelector('.pct-value').textContent = pct.toFixed(1) + '%';
-    row.querySelector('.vote-count').textContent = count.toLocaleString();
-    row.querySelector('.bar-fill').style.width = pct + '%';
+    // Defensive updates: only update if the elements are actually found
+    const pctEl = row.querySelector('.pct-value');
+    if (pctEl) pctEl.textContent = pct.toFixed(1) + '%';
 
-    const isActive = myVote === option.id;
+    const countEl = row.querySelector('.vote-count');
+    if (countEl) countEl.textContent = count.toLocaleString();
+
+    const barEl = row.querySelector('.bar-fill');
+    if (barEl) barEl.style.width = pct + '%';
+
+    // Handle selection UI
     const dot = row.querySelector('.selected-dot');
-    if (isActive) {
-      row.classList.add('opt-selected');
-      row.classList.remove('border-transparent');
-      dot.classList.remove('opacity-0');
-      dot.classList.add('opacity-100');
-    } else {
-      row.classList.remove('opt-selected');
-      row.classList.add('border-transparent');
-      dot.classList.add('opacity-0');
-      dot.classList.remove('opacity-100');
+    const isActive = myVote === option.id;
+
+    if (dot) {
+      if (isActive) {
+        row.classList.add('opt-selected');
+        row.classList.remove('border-transparent');
+        dot.classList.remove('opacity-0');
+        dot.classList.add('opacity-100');
+      } else {
+        row.classList.remove('opt-selected');
+        row.classList.add('border-transparent');
+        dot.classList.add('opacity-0');
+        dot.classList.remove('opacity-100');
+      }
     }
 
+    // Flash animation for updates
     if (changedOptionIds.includes(option.id)) {
       row.classList.add('flash-update');
       setTimeout(() => row.classList.remove('flash-update'), 700);
     }
   });
+
+  // 3. Update the grand total on the page
   updateGrandTotal();
 }
-
 // ============================================================
 // BOOT
 // ============================================================
