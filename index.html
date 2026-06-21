@@ -442,13 +442,21 @@ const topics = Object.values(state.topics);
   }
   updateGrandTotal();
 }
-
 function updateGrandTotal() {
+  const el = document.getElementById('totalVotes');
+  
+  // Defensive check: if the element doesn't exist, stop here
+  if (!el) return;
+
   let total = 0;
   Object.values(state.topics).forEach(t => {
-    if (t.status === 'active') total += Object.values(state.voteCounts[t.id] || {}).reduce((a,b) => a+b, 0);
+    if (t.status === 'active') {
+      const counts = state.voteCounts[t.id] || {};
+      total += Object.values(counts).reduce((a, b) => a + b, 0);
+    }
   });
-  document.getElementById('totalVotes').textContent = total.toLocaleString();
+  
+  el.textContent = total.toLocaleString();
 }
 
 // ============================================================
